@@ -21,23 +21,18 @@ public class AbfsThreadLeakTest {
 
         printSystemInfo();
 
-        // Test with multiple storage accounts to trigger multiple
-analyzers
+        // Test with multiple storage accounts to trigger multiple analyzers
         String[] storageAccounts = {
-            "abfs://<container1>@<account_name_here>.dfs.core.windows.net/
-",
-            "abfs://<container2>@<account_name_here>.dfs.core.windows.net/
-"
+            "abfs://<container1>@<account_name_here>.dfs.core.windows.net/",
+            "abfs://<container2>@<account_name_here>.dfs.core.windows.net/"
         };
 
         System.out.println("\n" + "=".repeat(60));
         System.out.println("ABFS THREAD LEAK REPRODUCTION TEST");
         System.out.println("=".repeat(60));
         System.out.println("Testing Hadoop ABFS timer thread leak bug");
-        System.out.println("Storage accounts: " +
-java.util.Arrays.toString(storageAccounts));
-        System.out.println("Autothrottling enabled: " +
-System.getProperty("fs.azure.enable.autothrottling", "true (default)"));
+        System.out.println("Storage accounts: " + java.util.Arrays.toString(storageAccounts));
+        System.out.println("Autothrottling enabled: " + System.getProperty("fs.azure.enable.autothrottling", "true (default)"));
         System.out.println("=".repeat(60));
 
         // Monitor thread count and memory
@@ -45,8 +40,7 @@ System.getProperty("fs.azure.enable.autothrottling", "true (default)"));
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
 
         System.out.printf("%-8s %-12s %-12s %-15s %-10s %-15s%n",
-                         "Cycle", "Total", "ABFS Timer", "Memory (MB)",
-"Delta", "Timestamp");
+                         "Cycle", "Total", "ABFS Timer", "Memory (MB)", "Delta", "Timestamp");
         System.out.println("-".repeat(80));
 
         long initialMemory = memoryBean.getHeapMemoryUsage().getUsed();
@@ -74,14 +68,12 @@ System.getProperty("fs.azure.enable.autothrottling", "true (default)"));
             long memoryAfter = memoryBean.getHeapMemoryUsage().getUsed();
             long endTime = System.currentTimeMillis();
 
-            String timestamp =
-LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
 
             System.out.printf("%-8d %-12s %-12s %-15.1f %-10d %-15s%n",
                 cycle,
                 String.format("%d->%d", threadsBefore, threadsAfter),
-                String.format("%d->%d", abfsTimerThreadsBefore,
-abfsTimerThreadsAfter),
+                String.format("%d->%d", abfsTimerThreadsBefore, abfsTimerThreadsAfter),
                 (memoryAfter - initialMemory) / 1024.0 / 1024.0,
                 (endTime - startTime),
                 timestamp);
@@ -104,23 +96,16 @@ abfsTimerThreadsAfter),
     private static void printSystemInfo() {
         System.out.println("SYSTEM INFORMATION");
         System.out.println("=".repeat(40));
-        System.out.println("Java Version: " +
-System.getProperty("java.version"));
-        System.out.println("Java Vendor: " +
-System.getProperty("java.vendor"));
-        System.out.println("OS: " + System.getProperty("os.name") + " " +
-System.getProperty("os.version"));
+        System.out.println("Java Version: " + System.getProperty("java.version"));
+        System.out.println("Java Vendor: " + System.getProperty("java.vendor"));
+        System.out.println("OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version"));
         try {
-            System.out.println("Hadoop Version: " +
-org.apache.hadoop.util.VersionInfo.getVersion());
-            System.out.println("Hadoop Build: " +
-org.apache.hadoop.util.VersionInfo.getBuildVersion());
+            System.out.println("Hadoop Version: " + org.apache.hadoop.util.VersionInfo.getVersion());
+            System.out.println("Hadoop Build: " + org.apache.hadoop.util.VersionInfo.getBuildVersion());
         } catch (Exception e) {
             System.out.println("Hadoop Version: Unable to determine");
         }
-        System.out.println("Test Time: " +
-LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd
-HH:mm:ss")));
+        System.out.println("Test Time: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }
 
     private static void printDetailedThreadAnalysis() {
@@ -139,15 +124,10 @@ HH:mm:ss")));
         for (long id : threadIds) {
             ThreadInfo info = threadBean.getThreadInfo(id);
             if (info != null) {
-                if
-(info.getThreadName().contains("abfs-timer-client-throttling-analyzer")) {
-                    System.out.println("  [" + info.getThreadId() + "] " +
-info.getThreadName() +
-                                     " (State: " + info.getThreadState() +
-")");
+                if (info.getThreadName().contains("abfs-timer-client-throttling-analyzer")) {
+                    System.out.println("  [" + info.getThreadId() + "] " + info.getThreadName() + " (State: " + info.getThreadState() + ")");
                     abfsTimerCount++;
-                } else if
-(info.getThreadName().toLowerCase().contains("abfs")) {
+                } else if (info.getThreadName().toLowerCase().contains("abfs")) {
                     abfsOtherCount++;
                 }
                 if (info.isDaemon()) {
@@ -160,15 +140,12 @@ info.getThreadName() +
         System.out.println("  ABFS Timer threads: " + abfsTimerCount);
         System.out.println("  Other ABFS threads: " + abfsOtherCount);
         System.out.println("  Daemon threads: " + daemonCount);
-        System.out.println("  Non-daemon threads: " + (threadIds.length -
-daemonCount));
+        System.out.println("  Non-daemon threads: " + (threadIds.length - daemonCount));
 
         if (abfsTimerCount > 0) {
             System.out.println("\n⚠️  THREAD LEAK DETECTED!");
-            System.out.println("   " + abfsTimerCount + " ABFS timer
-threads were not cleaned up");
-            System.out.println("   These threads will persist until JVM
-shutdown");
+            System.out.println("   " + abfsTimerCount + " ABFS timer threads were not cleaned up");
+            System.out.println("   These threads will persist until JVM shutdown");
         } else {
             System.out.println("\n✅ NO THREAD LEAK DETECTED");
         }
@@ -216,20 +193,14 @@ shutdown");
         System.out.println("2. Report this bug to Apache Hadoop JIRA:");
         System.out.println("   - Project: HADOOP");
         System.out.println("   - Component: fs/azure");
-        System.out.println("   - Summary: AbfsClientThrottlingAnalyzer
-timer threads leak");
+        System.out.println("   - Summary: AbfsClientThrottlingAnalyzer timer threads leak");
         System.out.println();
-        System.out.println("3. Root cause: Missing cleanup in
-AbfsClientThrottlingAnalyzer");
-        System.out.println("   - Timer created in constructor but never
-cancelled");
-        System.out.println("   - AbfsClient.close() doesn't clean up
-analyzer timers");
+        System.out.println("3. Root cause: Missing cleanup in AbfsClientThrottlingAnalyzer");
+        System.out.println("   - Timer created in constructor but never cancelled");
+        System.out.println("   - AbfsClient.close() doesn't clean up analyzer timers");
         System.out.println();
-        System.out.println("4. In production environments, monitor thread
-counts:");
-        System.out.println("   jstack <PID> | grep
-'abfs-timer-client-throttling-analyzer' | wc -l");
+        System.out.println("4. In production environments, monitor thread counts:");
+        System.out.println("   jstack <PID> | grep 'abfs-timer-client-throttling-analyzer' | wc -l");
     }
 
     private static void createAndUseFilesystem(String uri) {
@@ -237,40 +208,30 @@ counts:");
 
         // Add your ABFS configuration here
         conf.set("fs.azure.account.auth.type", "SharedKey");
-        conf.set("fs.azure.account.key.<account_name_here>.
-dfs.core.windows.net", "YOUR_KEY_HERE");
+        conf.set("fs.azure.account.key.<account_name_here>.dfs.core.windows.net", "YOUR_KEY_HERE");
 
         // Check if autothrottling is explicitly disabled
-        String autothrottling =
-System.getProperty("fs.azure.enable.autothrottling",
-
-conf.get("fs.azure.enable.autothrottling", "true"));
+        String autothrottling = System.getProperty("fs.azure.enable.autothrottling", conf.get("fs.azure.enable.autothrottling", "true"));
         conf.set("fs.azure.enable.autothrottling", autothrottling);
 
         FileSystem fs = null;
         try {
-            // Create filesystem - this should create AbfsClient and
-AbfsClientThrottlingAnalyzer
+            // Create filesystem - this should create AbfsClient and AbfsClientThrottlingAnalyzer
             fs = FileSystem.get(URI.create(uri), conf);
 
-            // Do some basic operations to ensure the client is fully
-initialized
-            Path testPath = new Path(uri + "test-" +
-System.currentTimeMillis());
+            // Do some basic operations to ensure the client is fully initialized
+            Path testPath = new Path(uri + "test-" + System.currentTimeMillis());
             fs.exists(testPath);  // This will trigger ABFS operations
 
         } catch (IOException e) {
-            System.err.println("Error with " + uri + ": " +
-e.getMessage());
+            System.err.println("Error with " + uri + ": " + e.getMessage());
         } finally {
-            // Close filesystem - this should clean up resources but WON'T
-clean up timer threads
+            // Close filesystem - this should clean up resources but WON'T clean up timer threads
             if (fs != null) {
                 try {
                     fs.close();
                 } catch (IOException e) {
-                    System.err.println("Error closing filesystem: " +
-e.getMessage());
+                    System.err.println("Error closing filesystem: " + e.getMessage());
                 }
             }
         }
@@ -283,8 +244,7 @@ e.getMessage());
         int count = 0;
         for (long id : threadIds) {
             ThreadInfo info = threadBean.getThreadInfo(id);
-            if (info != null &&
-info.getThreadName().contains("abfs-timer-client-throttling-analyzer")) {
+            if (info != null && info.getThreadName().contains("abfs-timer-client-throttling-analyzer")) {
                 count++;
             }
         }
@@ -292,8 +252,7 @@ info.getThreadName().contains("abfs-timer-client-throttling-analyzer")) {
     }
 
     /**
-     * Direct test of the fixed AbfsClientThrottlingAnalyzer to prove the
-fix works
+     * Direct test of the fixed AbfsClientThrottlingAnalyzer to prove the fix works
      */
     private static void testFixedAnalyzer() throws Exception {
         System.out.println("\n" + "=".repeat(60));
@@ -303,8 +262,7 @@ fix works
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
         // Test the broken behavior (simulated)
-        System.out.println("🔴 Simulating BROKEN behavior (no close()
-called):");
+        System.out.println("🔴 Simulating BROKEN behavior (no close() called):");
         int initialThreads = threadBean.getThreadCount();
         int initialAbfsThreads = countAbfsTimerThreads();
 
@@ -312,28 +270,16 @@ called):");
         for (int i = 1; i <= 3; i++) {
             try {
                 Configuration conf = new Configuration();
-                org.apache.hadoop.fs.azurebfs.AbfsConfiguration abfsConfig
-=
-                    new
-org.apache.hadoop.fs.azurebfs.AbfsConfiguration(conf, "testaccount" + i);
-
-
-org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer
-analyzer =
-                    new
-org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer("testaccount"
-+ i, abfsConfig);
-
+                org.apache.hadoop.fs.azurebfs.AbfsConfiguration abfsConfig = new org.apache.hadoop.fs.azurebfs.AbfsConfiguration(conf, "testaccount" + i);
+                org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer analyzer =new org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer("testaccount" + i, abfsConfig);
                 Thread.sleep(200);
                 analyzer.addBytesTransferred(1024, false);
 
                 // DON'T call close() - simulates the bug
-                System.out.println("  Created analyzer " + i + " (not
-closed - simulates bug)");
+                System.out.println("  Created analyzer " + i + " (not closed - simulates bug)");
 
             } catch (Exception e) {
-                System.err.println("Error creating analyzer: " +
-e.getMessage());
+                System.err.println("Error creating analyzer: " + e.getMessage());
             }
         }
 
@@ -341,41 +287,26 @@ e.getMessage());
         int brokenThreads = threadBean.getThreadCount();
         int brokenAbfsThreads = countAbfsTimerThreads();
 
-        System.out.printf("  Result: %d total threads (+%d), %d ABFS timer
-threads (+%d) - LEAKED!%n",
-            brokenThreads, brokenThreads - initialThreads,
-            brokenAbfsThreads, brokenAbfsThreads - initialAbfsThreads);
+        System.out.printf("  Result: %d total threads (+%d), %d ABFS timer threads (+%d) - LEAKED!%n", brokenThreads, brokenThreads - initialThreads, brokenAbfsThreads, brokenAbfsThreads - initialAbfsThreads);
 
         // Test the fixed behavior
-        System.out.println("\n✅ Testing FIXED behavior (with close()
-called):");
+        System.out.println("\n✅ Testing FIXED behavior (with close() called):");
 
         for (int i = 4; i <= 6; i++) {
             try {
                 Configuration conf = new Configuration();
-                org.apache.hadoop.fs.azurebfs.AbfsConfiguration abfsConfig
-=
-                    new
-org.apache.hadoop.fs.azurebfs.AbfsConfiguration(conf, "testaccount" + i);
-
-
-org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer
-analyzer =
-                    new
-org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer("testaccount"
-+ i, abfsConfig);
+                org.apache.hadoop.fs.azurebfs.AbfsConfiguration abfsConfig = new org.apache.hadoop.fs.azurebfs.AbfsConfiguration(conf, "testaccount" + i);
+                org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer analyzer = new org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer("testaccount" + i, abfsConfig);
 
                 Thread.sleep(200);
                 analyzer.addBytesTransferred(1024, false);
 
                 // CALL close() - this is the fix!
                 analyzer.close();
-                System.out.println("  Created analyzer " + i + " and
-properly closed it");
+                System.out.println("  Created analyzer " + i + " and properly closed it");
 
             } catch (Exception e) {
-                System.err.println("Error creating/closing analyzer: " +
-e.getMessage());
+                System.err.println("Error creating/closing analyzer: " + e.getMessage());
             }
         }
 
@@ -383,23 +314,16 @@ e.getMessage());
         int finalThreads = threadBean.getThreadCount();
         int finalAbfsThreads = countAbfsTimerThreads();
 
-        System.out.printf("  Result: %d total threads (+%d), %d ABFS timer
-threads (+%d)%n",
-            finalThreads, finalThreads - brokenThreads,
-            finalAbfsThreads, finalAbfsThreads - brokenAbfsThreads);
+        System.out.printf("  Result: %d total threads (+%d), %d ABFS timer threads (+%d)%n", finalThreads, finalThreads - brokenThreads, finalAbfsThreads, finalAbfsThreads - brokenAbfsThreads);
 
         if (finalAbfsThreads == brokenAbfsThreads) {
-            System.out.println("✅ FIX WORKS! No additional threads leaked
-when close() is called!");
+            System.out.println("✅ FIX WORKS! No additional threads leaked when close() is called!");
         } else {
-            System.out.println("❌ Fix didn't work - threads still
-leaking");
+            System.out.println("❌ Fix didn't work - threads still leaking");
         }
 
         System.out.println("\n📋 SUMMARY:");
-        System.out.printf("  Without fix: +%d ABFS timer threads
-(LEAKED)%n", brokenAbfsThreads - initialAbfsThreads);
-        System.out.printf("  With fix: +%d ABFS timer threads (NO
-LEAK)%n", finalAbfsThreads - brokenAbfsThreads);
+        System.out.printf("  Without fix: +%d ABFS timer threads (LEAKED)%n", brokenAbfsThreads - initialAbfsThreads);
+        System.out.printf("  With fix: +%d ABFS timer threads (NO LEAK)%n", finalAbfsThreads - brokenAbfsThreads);
     }
 }
