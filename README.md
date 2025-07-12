@@ -86,7 +86,7 @@ $ jstack <PID> | grep 'abfs-timer-client-throttling-analyzer' | wc -l
 308  # Continues growing even after test completion
 ```
 
-## 🔍 Root Cause Analysis
+## Root Cause Analysis
 
 ### The Problem
 `AbfsClientThrottlingAnalyzer` creates Timer objects in its constructor but has no cleanup mechanism:
@@ -113,7 +113,7 @@ abfs-timer-client-throttling-analyzer-read {storage-account}
 abfs-timer-client-throttling-analyzer-write {storage-account}
 ```
 
-## ✅ Proof-of-Concept Fix
+## Proof-of-Concept Fix
 
 This repository includes a working fix that completely eliminates the thread leak.
 
