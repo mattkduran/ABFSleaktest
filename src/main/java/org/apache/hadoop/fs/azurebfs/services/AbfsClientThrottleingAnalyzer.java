@@ -42,8 +42,7 @@ public class AbfsClientThrottlingAnalyzer {
   private static final double MIN_ACCEPTABLE_ERROR_PERCENTAGE = .1;
   private static final double MAX_EQUILIBRIUM_ERROR_PERCENTAGE = 1;
   private static final double RAPID_SLEEP_DECREASE_FACTOR = .75;
-  private static final double RAPID_SLEEP_DECREASE_TRANSITION_PERIOD_MS =
-150
+  private static final double RAPID_SLEEP_DECREASE_TRANSITION_PERIOD_MS = 150
       * 1000;
   private static final double SLEEP_DECREASE_FACTOR = .975;
   private static final double SLEEP_INCREASE_FACTOR = 1.05;
@@ -55,8 +54,7 @@ public class AbfsClientThrottlingAnalyzer {
   private Timer timer = null;
   private AtomicReference<AbfsOperationMetrics> blobMetrics = null;
   private AtomicLong lastExecutionTime = null;
-  private final AtomicBoolean isOperationOnAccountIdle = new
-AtomicBoolean(false);
+  private final AtomicBoolean isOperationOnAccountIdle = new AtomicBoolean(false);
   private AbfsConfiguration abfsConfiguration = null;
   private boolean accountLevelThrottlingEnabled = true;
 
@@ -65,38 +63,32 @@ AtomicBoolean(false);
   }
 
   /**
-   * Creates an instance of the <code>AbfsClientThrottlingAnalyzer</code>
-class with
+   * Creates an instance of the <code>AbfsClientThrottlingAnalyzer</code> class with
    * the specified name and period.
    *
    * @param name   A name used to identify this instance.
    * @param abfsConfiguration The configuration set.
    * @throws IllegalArgumentException If name is null or empty.
-   *                                  If period is less than 1000 or
-greater than 30000 milliseconds.
+   *                                  If period is less than 1000 or greater than 30000 milliseconds.
    */
-  public AbfsClientThrottlingAnalyzer(String name, AbfsConfiguration
-abfsConfiguration)
+  public AbfsClientThrottlingAnalyzer(String name, AbfsConfiguration abfsConfiguration)
       throws IllegalArgumentException {
     Preconditions.checkArgument(
         StringUtils.isNotEmpty(name),
         "The argument 'name' cannot be null or empty.");
     int period = abfsConfiguration.getAnalysisPeriod();
     Preconditions.checkArgument(
-        period >= MIN_ANALYSIS_PERIOD_MS && period <=
-MAX_ANALYSIS_PERIOD_MS,
+        period >= MIN_ANALYSIS_PERIOD_MS && period <= MAX_ANALYSIS_PERIOD_MS,
         "The argument 'period' must be between 1000 and 30000.");
     this.name = name;
     this.abfsConfiguration = abfsConfiguration;
-    this.accountLevelThrottlingEnabled =
-abfsConfiguration.accountThrottlingEnabled();
+    this.accountLevelThrottlingEnabled = abfsConfiguration.accountThrottlingEnabled();
     this.analysisPeriodMs = abfsConfiguration.getAnalysisPeriod();
     this.lastExecutionTime = new AtomicLong(now());
     this.blobMetrics = new AtomicReference<AbfsOperationMetrics>(
         new AbfsOperationMetrics(System.currentTimeMillis()));
     this.timer = new Timer(
-        String.format("abfs-timer-client-throttling-analyzer-%s", name),
-true);
+        String.format("abfs-timer-client-throttling-analyzer-%s", name), true);
     this.timer.schedule(new TimerTaskImpl(),
         analysisPeriodMs,
         analysisPeriodMs);
@@ -106,12 +98,6 @@ true);
    * Resumes the timer if it was stopped.
    */
   private void resumeTimer() {
-    if (timer == null) {
-    // Cannot resume - analyzer has been closed
-        LOG.warn("Cannot resume timer for {} - analyzer has been closed",
-name);
-        return;
-    }
     blobMetrics = new AtomicReference<AbfsOperationMetrics>(
             new AbfsOperationMetrics(System.currentTimeMillis()));
     timer.schedule(new TimerTaskImpl(),
@@ -126,14 +112,8 @@ name);
    * @param timerTask The timertask object.
    * @return true or false.
    */
-  private synchronized boolean timerOrchestrator(TimerFunctionality
-timerFunctionality,
+  private synchronized boolean timerOrchestrator(TimerFunctionality timerFunctionality,
       TimerTask timerTask) {
-
-    if (timer == null) {
-        return true; // If timer is null, return true to indicate no
-action needed.
-    }
     switch (timerFunctionality) {
     case RESUME:
       if (isOperationOnAccountIdle.get()) {
@@ -159,8 +139,7 @@ action needed.
    * Updates metrics with results from the current storage operation.
    *
    * @param count             The count of bytes transferred.
-   * @param isFailedOperation True if the operation failed; otherwise
-false.
+   * @param isFailedOperation True if the operation failed; otherwise false.
    */
   public void addBytesTransferred(long count, boolean isFailedOperation) {
     AbfsOperationMetrics metrics = blobMetrics.get();
@@ -175,8 +154,7 @@ false.
   }
 
   /**
-   * Suspends the current storage operation, as necessary, to reduce
-throughput.
+   * Suspends the current storage operation, as necessary, to reduce throughput.
    * @return true if Thread sleeps(Throttling occurs) else false.
    */
   public boolean suspendIfNecessary() {
@@ -207,8 +185,7 @@ throughput.
     return isOperationOnAccountIdle;
   }
 
-  private int analyzeMetricsAndUpdateSleepDuration(AbfsOperationMetrics
-metrics,
+  private int analyzeMetricsAndUpdateSleepDuration(AbfsOperationMetrics metrics,
                                                    int sleepDuration) {
     final double percentageConversionFactor = 100;
     double bytesFailed = metrics.getBytesFailed().get();
@@ -241,14 +218,11 @@ metrics,
       // Increase sleepDuration in order to minimize error rate.
       consecutiveNoErrorCount = 0;
 
-      // Increase sleep duration in order to reduce throughput and error
-rate.
+      // Increase sleep duration in order to reduce throughput and error rate.
       // First, calculate target throughput: bytesSuccessful / periodMs.
-      // Next, calculate time required to send *all* data (assuming next
-period
+      // Next, calculate time required to send *all* data (assuming next period
       // is similar to previous) at the target throughput: (bytesSuccessful
-      // + bytesFailed) * periodMs / bytesSuccessful. Next, subtract
-periodMs to
+      // + bytesFailed) * periodMs / bytesSuccessful. Next, subtract periodMs to
       // get the total additional delay needed.
       double additionalDelayNeeded = 5 * analysisPeriodMs;
       if (bytesSuccessful > 0) {
@@ -258,23 +232,19 @@ periodMs to
             - periodMs;
       }
 
-      // amortize the additional delay needed across the estimated number
-of
+      // amortize the additional delay needed across the estimated number of
       // requests during the next period
       newSleepDuration = additionalDelayNeeded
           / (operationsFailed + operationsSuccessful);
 
       final double maxSleepDuration = analysisPeriodMs;
-      final double minSleepDuration = sleepDuration *
-SLEEP_INCREASE_FACTOR;
+      final double minSleepDuration = sleepDuration * SLEEP_INCREASE_FACTOR;
 
-      // Add 1 ms to avoid rounding down and to decrease proximity to the
-server
+      // Add 1 ms to avoid rounding down and to decrease proximity to the server
       // side ingress/egress limit.  Ensure that the new sleep duration is
       // larger than the current one to more quickly reduce the number of
       // errors.  Don't allow the sleep duration to grow unbounded, after a
-      // certain point throttling won't help, for example, if there are
-far too
+      // certain point throttling won't help, for example, if there are far too
       // many tasks/containers/nodes no amount of throttling will help.
       newSleepDuration = Math.max(newSleepDuration, minSleepDuration) + 1;
       newSleepDuration = Math.min(newSleepDuration, maxSleepDuration);
@@ -296,7 +266,8 @@ far too
 
     return (int) newSleepDuration;
   }
-    public void close() {
+
+public void close() {
     if (timer != null) {
         timer.cancel();
         timer.purge();
@@ -308,10 +279,8 @@ far too
         blobMetrics.set(null);
     }
 
-    LOG.debug("AbfsClientThrottlingAnalyzer for {} has been closed and
-cleaned up", name);
+    LOG.debug("AbfsClientThrottlingAnalyzer for {} has been closed and cleaned up", name);
 }
-
 /**
  * Returns whether this analyzer has been properly closed.
  * @return true if closed, false if still active
@@ -327,10 +296,8 @@ public boolean isClosed() {
     private AtomicInteger doingWork = new AtomicInteger(0);
 
     /**
-     * Periodically analyzes a snapshot of the blob storage metrics and
-updates
-     * the sleepDuration in order to appropriately throttle storage
-operations.
+     * Periodically analyzes a snapshot of the blob storage metrics and updates
+     * the sleepDuration in order to appropriately throttle storage operations.
      */
     @Override
     public void run() {
