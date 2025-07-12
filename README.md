@@ -152,7 +152,7 @@ public boolean isClosed() {
 ✅ FIX WORKS! No additional threads leaked when close() is called!
 ```
 
-## 🔧 Immediate Workaround
+## Immediate Workaround
 
 For production environments experiencing this issue:
 
