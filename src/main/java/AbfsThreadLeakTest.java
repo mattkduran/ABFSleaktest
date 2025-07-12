@@ -23,8 +23,8 @@ public class AbfsThreadLeakTest {
 
         // Test with multiple storage accounts to trigger multiple analyzers
         String[] storageAccounts = {
-            "abfs://adlstest@mattduran18841test.dfs.core.windows.net/",
-            "abfs://adlstest2@mattduran18841test.dfs.core.windows.net/"
+            "abfs://<container1>@<account>.dfs.core.windows.net/",
+            "abfs://<container2>@<account>.dfs.core.windows.net/"
         };
 
         System.out.println("\n" + "=".repeat(60));
@@ -209,7 +209,7 @@ public class AbfsThreadLeakTest {
 
         // Add your ABFS configuration here
         conf.set("fs.azure.account.auth.type", "SharedKey");
-        conf.set("fs.azure.account.key.mattduran18841test.dfs.core.windows.net", "wvBzhNJUQAYypBsgdKTX5T+91euByOryjAewDGPQiA0QQEoGdTMeMhPe2mT/LBwzqMRXHwT6NEJN+ASttaDlHg==");
+        conf.set("fs.azure.account.key.<account>.dfs.core.windows.net", "<dummykey>>");
 
         // Check if autothrottling is explicitly disabled
         String autothrottling = System.getProperty("fs.azure.enable.autothrottling",
