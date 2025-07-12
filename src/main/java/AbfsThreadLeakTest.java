@@ -23,8 +23,8 @@ public class AbfsThreadLeakTest {
 
         // Test with multiple storage accounts to trigger multiple analyzers
         String[] storageAccounts = {
-            "abfs://<container1>@<account_name_here>.dfs.core.windows.net/",
-            "abfs://<container2>@<account_name_here>.dfs.core.windows.net/"
+            "abfs://adlstest@mattduran18841test.dfs.core.windows.net/",
+            "abfs://adlstest2@mattduran18841test.dfs.core.windows.net/"
         };
 
         System.out.println("\n" + "=".repeat(60));
@@ -45,7 +45,7 @@ public class AbfsThreadLeakTest {
 
         long initialMemory = memoryBean.getHeapMemoryUsage().getUsed();
 
-        for (int cycle = 1; cycle <= 20; cycle++) {
+        for (int cycle = 1; cycle <= 200; cycle++) {
             long startTime = System.currentTimeMillis();
 
             // Count threads and memory before
@@ -60,7 +60,7 @@ public class AbfsThreadLeakTest {
 
             // Force GC to ensure objects are cleaned up
             System.gc();
-            Thread.sleep(1000);
+            //Thread.sleep(1000);
 
             // Count threads and memory after
             int threadsAfter = threadBean.getThreadCount();
@@ -79,7 +79,7 @@ public class AbfsThreadLeakTest {
                 timestamp);
 
             // Sleep between cycles
-            Thread.sleep(2000);
+            //Thread.sleep(2000);
         }
 
         System.out.println("\n" + "=".repeat(60));
@@ -125,7 +125,8 @@ public class AbfsThreadLeakTest {
             ThreadInfo info = threadBean.getThreadInfo(id);
             if (info != null) {
                 if (info.getThreadName().contains("abfs-timer-client-throttling-analyzer")) {
-                    System.out.println("  [" + info.getThreadId() + "] " + info.getThreadName() + " (State: " + info.getThreadState() + ")");
+                    System.out.println("  [" + info.getThreadId() + "] " + info.getThreadName() +
+                                     " (State: " + info.getThreadState() + ")");
                     abfsTimerCount++;
                 } else if (info.getThreadName().toLowerCase().contains("abfs")) {
                     abfsOtherCount++;
@@ -208,10 +209,11 @@ public class AbfsThreadLeakTest {
 
         // Add your ABFS configuration here
         conf.set("fs.azure.account.auth.type", "SharedKey");
-        conf.set("fs.azure.account.key.<account_name_here>.dfs.core.windows.net", "YOUR_KEY_HERE");
+        conf.set("fs.azure.account.key.mattduran18841test.dfs.core.windows.net", "wvBzhNJUQAYypBsgdKTX5T+91euByOryjAewDGPQiA0QQEoGdTMeMhPe2mT/LBwzqMRXHwT6NEJN+ASttaDlHg==");
 
         // Check if autothrottling is explicitly disabled
-        String autothrottling = System.getProperty("fs.azure.enable.autothrottling", conf.get("fs.azure.enable.autothrottling", "true"));
+        String autothrottling = System.getProperty("fs.azure.enable.autothrottling",
+                                                  conf.get("fs.azure.enable.autothrottling", "true"));
         conf.set("fs.azure.enable.autothrottling", autothrottling);
 
         FileSystem fs = null;
@@ -270,8 +272,12 @@ public class AbfsThreadLeakTest {
         for (int i = 1; i <= 3; i++) {
             try {
                 Configuration conf = new Configuration();
-                org.apache.hadoop.fs.azurebfs.AbfsConfiguration abfsConfig = new org.apache.hadoop.fs.azurebfs.AbfsConfiguration(conf, "testaccount" + i);
-                org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer analyzer =new org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer("testaccount" + i, abfsConfig);
+                org.apache.hadoop.fs.azurebfs.AbfsConfiguration abfsConfig =
+                    new org.apache.hadoop.fs.azurebfs.AbfsConfiguration(conf, "testaccount" + i);
+
+                org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer analyzer =
+                    new org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer("testaccount" + i, abfsConfig);
+
                 Thread.sleep(200);
                 analyzer.addBytesTransferred(1024, false);
 
@@ -287,7 +293,9 @@ public class AbfsThreadLeakTest {
         int brokenThreads = threadBean.getThreadCount();
         int brokenAbfsThreads = countAbfsTimerThreads();
 
-        System.out.printf("  Result: %d total threads (+%d), %d ABFS timer threads (+%d) - LEAKED!%n", brokenThreads, brokenThreads - initialThreads, brokenAbfsThreads, brokenAbfsThreads - initialAbfsThreads);
+        System.out.printf("  Result: %d total threads (+%d), %d ABFS timer threads (+%d) - LEAKED!%n",
+            brokenThreads, brokenThreads - initialThreads,
+            brokenAbfsThreads, brokenAbfsThreads - initialAbfsThreads);
 
         // Test the fixed behavior
         System.out.println("\n✅ Testing FIXED behavior (with close() called):");
@@ -295,8 +303,11 @@ public class AbfsThreadLeakTest {
         for (int i = 4; i <= 6; i++) {
             try {
                 Configuration conf = new Configuration();
-                org.apache.hadoop.fs.azurebfs.AbfsConfiguration abfsConfig = new org.apache.hadoop.fs.azurebfs.AbfsConfiguration(conf, "testaccount" + i);
-                org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer analyzer = new org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer("testaccount" + i, abfsConfig);
+                org.apache.hadoop.fs.azurebfs.AbfsConfiguration abfsConfig =
+                    new org.apache.hadoop.fs.azurebfs.AbfsConfiguration(conf, "testaccount" + i);
+
+                org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer analyzer =
+                    new org.apache.hadoop.fs.azurebfs.services.AbfsClientThrottlingAnalyzer("testaccount" + i, abfsConfig);
 
                 Thread.sleep(200);
                 analyzer.addBytesTransferred(1024, false);
@@ -314,7 +325,9 @@ public class AbfsThreadLeakTest {
         int finalThreads = threadBean.getThreadCount();
         int finalAbfsThreads = countAbfsTimerThreads();
 
-        System.out.printf("  Result: %d total threads (+%d), %d ABFS timer threads (+%d)%n", finalThreads, finalThreads - brokenThreads, finalAbfsThreads, finalAbfsThreads - brokenAbfsThreads);
+        System.out.printf("  Result: %d total threads (+%d), %d ABFS timer threads (+%d)%n",
+            finalThreads, finalThreads - brokenThreads,
+            finalAbfsThreads, finalAbfsThreads - brokenAbfsThreads);
 
         if (finalAbfsThreads == brokenAbfsThreads) {
             System.out.println("✅ FIX WORKS! No additional threads leaked when close() is called!");
